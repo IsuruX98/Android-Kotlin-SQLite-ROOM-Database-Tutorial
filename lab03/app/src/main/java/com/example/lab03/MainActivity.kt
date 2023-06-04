@@ -7,16 +7,25 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.room.Room
+import com.example.lab03.database.User
+import com.example.lab03.database.UserDatabase
 import com.example.lab03.databinding.ActivityMainBinding
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var db:UserDatabase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Initialize the Room database
+        db = Room.databaseBuilder(applicationContext,UserDatabase::class.java,"my-db").build()
 
 
         binding.cancelBtn.setOnClickListener {
@@ -36,9 +45,25 @@ class MainActivity : AppCompatActivity() {
             val password = binding.password.text.toString()
             val password2 = binding.password2.text.toString()
 
+            if (!email.contains("@")){
+                Toast.makeText(this, "Please enter a valid email", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            if (password != password2){
+                Toast.makeText(this, "Password mismatch", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            //creating a user object
+            val user = User(email=email, name = name, mobile = mobile, password = password)
+
+            // Save user data to the database using a coroutine
+            GlobalScope.launch {
+                db.userDao().insertUser(user)
+            }
+
             showAlertBox(this, name, email, mobile, password, password2)
         }
-
     }
 
     private fun showAlertBox(
